@@ -20,18 +20,21 @@ func (f EmitterFunc) Emit(emit emitFunc) error {
 }
 
 type Config struct {
-	Tag       string   `codec:"tag"`
-	Interval  string   `codec:"interval"`
-	Processes []string `codec:"processes"`
+	Tag          string   `codec:"tag"`
+	Interval     string   `codec:"interval"`
+	Processes    []string `codec:"processes"`
+	Disks        []string `codec:"disks"`
+	DiskInterval string   `codec:"disk_interval"`
 }
 
 type SysStatInput struct {
-	env       *plugin.Env
-	conf      *Config
-	tagPrefix string
-	interval  time.Duration
-	emitters  []Emitter
-	closeCh   chan bool
+	env          *plugin.Env
+	conf         *Config
+	tagPrefix    string
+	interval     time.Duration
+	diskInterval time.Duration
+	emitters     []Emitter
+	closeCh      chan bool
 }
 
 func (p *SysStatInput) Name() string {
@@ -47,10 +50,8 @@ func (p *SysStatInput) Init(env *plugin.Env) (err error) {
 	if p.conf.Tag != "" {
 		p.tagPrefix = p.conf.Tag + "."
 	}
-	if p.conf.Interval == "" {
-		p.interval = 6 * time.Second
-	} else {
-		p.interval, err = time.ParseDuration(p.conf.Interval)
+	if p.interval, err = parseDuration(p.conf.Interval, 5*time.Second); err != nil {
+		return
 	}
 	p.emitters = []Emitter{
 		EmitterFunc(EmitMemory),
@@ -59,15 +60,32 @@ func (p *SysStatInput) Init(env *plugin.Env) (err error) {
 	if len(p.conf.Processes) > 0 {
 		p.emitters = append(p.emitters, NewProcessStat(p.conf.Processes))
 	}
+	if len(p.conf.Disks) > 0 {
+		if p.diskInterval, err = parseDuration(p.conf.DiskInterval, 1*time.Minute); err != nil {
+			return
+		}
+	}
 	return
 }
 
 func (p *SysStatInput) Start() error {
 	go func() {
+		var diskTick <-chan time.Time
+		diskUsage := DiskUsage{Paths: p.conf.Disks}
+		if p.diskInterval > 0 {
+			diskTick = time.Tick(p.diskInterval)
+			diskUsage.Emit(p.emit)
+		}
+
 		tick := time.Tick(p.interval)
+		p.EmitStat()
 		for {
-			p.EmitStat()
-			<-tick
+			select {
+			case <-tick:
+				p.EmitStat()
+			case <-diskTick:
+				diskUsage.Emit(p.emit)
+			}
 		}
 	}()
 	return nil
@@ -75,17 +93,26 @@ func (p *SysStatInput) Start() error {
 
 func (p *SysStatInput) EmitStat() {
 	for _, emitter := range p.emitters {
-		err := emitter.Emit(func(tag string, v map[string]interface{}) {
-			p.env.Emit(event.NewRecord(p.tagPrefix+tag, v))
-		})
+		err := emitter.Emit(p.emit)
 		if err != nil {
 			p.env.Log.Error(err)
 		}
 	}
 }
 
+func (p *SysStatInput) emit(tag string, v map[string]interface{}) {
+	p.env.Emit(event.NewRecord(p.tagPrefix+tag, v))
+}
+
 func main() {
 	plugin.New(func() plugin.Plugin {
 		return &SysStatInput{}
 	}).Run()
+}
+
+func parseDuration(s string, d time.Duration) (time.Duration, error) {
+	if s == "" {
+		return d, nil
+	}
+	return time.ParseDuration(s)
 }
