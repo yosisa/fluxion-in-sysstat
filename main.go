@@ -7,9 +7,22 @@ import (
 	"github.com/yosisa/fluxion/plugin"
 )
 
+type emitFunc func(string, map[string]interface{})
+
+type Emitter interface {
+	Emit(emitFunc) error
+}
+
+type EmitterFunc func(emitFunc) error
+
+func (f EmitterFunc) Emit(emit emitFunc) error {
+	return f(emit)
+}
+
 type Config struct {
-	Tag      string `codec:"tag"`
-	Interval string `codec:"interval"`
+	Tag       string   `codec:"tag"`
+	Interval  string   `codec:"interval"`
+	Processes []string `codec:"processes"`
 }
 
 type SysStatInput struct {
@@ -17,6 +30,7 @@ type SysStatInput struct {
 	conf      *Config
 	tagPrefix string
 	interval  time.Duration
+	emitters  []Emitter
 	closeCh   chan bool
 }
 
@@ -38,6 +52,12 @@ func (p *SysStatInput) Init(env *plugin.Env) (err error) {
 	} else {
 		p.interval, err = time.ParseDuration(p.conf.Interval)
 	}
+	p.emitters = []Emitter{
+		EmitterFunc(EmitMemory),
+	}
+	if len(p.conf.Processes) > 0 {
+		p.emitters = append(p.emitters, NewProcessStat(p.conf.Processes))
+	}
 	return
 }
 
@@ -53,9 +73,13 @@ func (p *SysStatInput) Start() error {
 }
 
 func (p *SysStatInput) EmitStat() {
-	v, err := GetMemory()
-	if err == nil {
-		p.env.Emit(event.NewRecord(p.tagPrefix+"memory", v))
+	for _, emitter := range p.emitters {
+		err := emitter.Emit(func(tag string, v map[string]interface{}) {
+			p.env.Emit(event.NewRecord(p.tagPrefix+tag, v))
+		})
+		if err != nil {
+			p.env.Log.Error(err)
+		}
 	}
 }
 
