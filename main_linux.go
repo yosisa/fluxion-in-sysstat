@@ -27,6 +27,19 @@ func EmitMemory(emit emitFunc) error {
 	return nil
 }
 
+func EmitLoadAvg(emit emitFunc) error {
+	load, err := gopsutil.LoadAvg()
+	if err != nil {
+		return err
+	}
+	emit("load", map[string]interface{}{
+		"load1":  load.Load1,
+		"load5":  load.Load5,
+		"load15": load.Load15,
+	})
+	return nil
+}
+
 type ProcessStat struct {
 	targets map[string]bool
 }
