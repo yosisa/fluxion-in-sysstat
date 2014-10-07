@@ -12,17 +12,17 @@ func EmitMemory(emit emitFunc) error {
 		return err
 	}
 	emit("memory", map[string]interface{}{
-		"total":       mem.Total,
-		"available":   mem.Available,
-		"used":        mem.Used,
-		"usedPercent": mem.UsedPercent,
-		"free":        mem.Free,
-		"active":      mem.Active,
-		"inactive":    mem.Inactive,
-		"buffers":     mem.Buffers,
-		"cached":      mem.Cached,
-		"wired":       mem.Wired,
-		"shared":      mem.Shared,
+		"total":        mem.Total,
+		"available":    mem.Available,
+		"used":         mem.Used,
+		"used_percent": mem.UsedPercent,
+		"free":         mem.Free,
+		"active":       mem.Active,
+		"inactive":     mem.Inactive,
+		"buffers":      mem.Buffers,
+		"cached":       mem.Cached,
+		"wired":        mem.Wired,
+		"shared":       mem.Shared,
 	})
 	return nil
 }
