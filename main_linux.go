@@ -1,6 +1,7 @@
 package main
 
 import (
+	"path"
 	"strings"
 
 	"github.com/shirou/gopsutil"
@@ -69,6 +70,7 @@ func (s *ProcessStat) Emit(emit emitFunc) error {
 		}
 		// Process.Name() doesn't contain full name. It maybe shortened.
 		name := strings.SplitN(cmd, " ", 2)[0]
+		name = path.Base(name)
 		if _, ok := s.targets[name]; !ok {
 			continue
 		}
