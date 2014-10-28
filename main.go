@@ -3,7 +3,7 @@ package main
 import (
 	"time"
 
-	"github.com/yosisa/fluxion/event"
+	"github.com/yosisa/fluxion/message"
 	"github.com/yosisa/fluxion/plugin"
 )
 
@@ -35,10 +35,6 @@ type SysStatInput struct {
 	diskInterval time.Duration
 	emitters     []Emitter
 	closeCh      chan bool
-}
-
-func (p *SysStatInput) Name() string {
-	return "in-sysstat"
 }
 
 func (p *SysStatInput) Init(env *plugin.Env) (err error) {
@@ -91,6 +87,10 @@ func (p *SysStatInput) Start() error {
 	return nil
 }
 
+func (p *SysStatInput) Close() error {
+	return nil
+}
+
 func (p *SysStatInput) EmitStat() {
 	for _, emitter := range p.emitters {
 		err := emitter.Emit(p.emit)
@@ -101,11 +101,11 @@ func (p *SysStatInput) EmitStat() {
 }
 
 func (p *SysStatInput) emit(tag string, v map[string]interface{}) {
-	p.env.Emit(event.NewRecord(p.tagPrefix+tag, v))
+	p.env.Emit(message.NewEvent(p.tagPrefix+tag, v))
 }
 
 func main() {
-	plugin.New(func() plugin.Plugin {
+	plugin.New("in-sysstat", func() plugin.Plugin {
 		return &SysStatInput{}
 	}).Run()
 }
