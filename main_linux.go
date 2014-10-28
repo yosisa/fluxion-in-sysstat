@@ -59,6 +59,11 @@ func (s *ProcessStat) Emit(emit emitFunc) error {
 		return err
 	}
 
+	counts := make(map[string]int)
+	for name := range s.targets {
+		counts[name] = 0
+	}
+
 	for _, pid := range pids {
 		p, err := gopsutil.NewProcess(pid)
 		if err != nil {
@@ -74,6 +79,8 @@ func (s *ProcessStat) Emit(emit emitFunc) error {
 		if _, ok := s.targets[name]; !ok {
 			continue
 		}
+		counts[name]++
+
 		mem, err := p.MemoryInfoEx()
 		if err != nil {
 			continue
@@ -91,6 +98,13 @@ func (s *ProcessStat) Emit(emit emitFunc) error {
 			"vms":      mem.VMS,
 			"shared":   mem.Shared,
 			"cpu_time": cpu.User + cpu.System,
+		})
+	}
+
+	for name, n := range counts {
+		emit("process.count", map[string]interface{}{
+			"name":  name,
+			"count": n,
 		})
 	}
 	return nil
