@@ -1,11 +1,14 @@
 package main
 
 import (
+	"os"
 	"time"
 
 	"github.com/yosisa/fluxion/message"
 	"github.com/yosisa/fluxion/plugin"
 )
+
+var hostname, _ = os.Hostname()
 
 type emitFunc func(string, map[string]interface{})
 
@@ -101,6 +104,7 @@ func (p *SysStatInput) EmitStat() {
 }
 
 func (p *SysStatInput) emit(tag string, v map[string]interface{}) {
+	v["host"] = hostname
 	p.env.Emit(message.NewEvent(p.tagPrefix+tag, v))
 }
 
