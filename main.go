@@ -23,11 +23,11 @@ func (f EmitterFunc) Emit(emit emitFunc) error {
 }
 
 type Config struct {
-	Tag          string   `codec:"tag"`
-	Interval     string   `codec:"interval"`
-	Processes    []string `codec:"processes"`
-	Disks        []string `codec:"disks"`
-	DiskInterval string   `codec:"disk_interval"`
+	Tag          string   `toml:"tag"`
+	Interval     string   `toml:"interval"`
+	Processes    []string `toml:"processes"`
+	Disks        []string `toml:"disks"`
+	DiskInterval string   `toml:"disk_interval"`
 }
 
 type SysStatInput struct {
