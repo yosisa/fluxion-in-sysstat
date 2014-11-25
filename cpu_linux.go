@@ -30,12 +30,14 @@ func (s *CPUStat) Emit(emit emitFunc) error {
 		stolen := cur.Stolen - old.Stolen
 
 		total := user + nice + system + idle + iowait + irq + softirq + stolen
+		idle_percent := idle / total * 100
 		emit("cpu", map[string]interface{}{
 			"cpu":     old.CPU,
+			"used":    100 - idle_percent,
 			"user":    user / total * 100,
 			"nice":    nice / total * 100,
 			"system":  system / total * 100,
-			"idle":    idle / total * 100,
+			"idle":    idle_percent,
 			"iowait":  iowait / total * 100,
 			"irq":     irq / total * 100,
 			"softirq": softirq / total * 100,
