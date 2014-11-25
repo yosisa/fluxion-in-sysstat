@@ -56,6 +56,7 @@ func (p *SysStatInput) Init(env *plugin.Env) (err error) {
 		EmitterFunc(EmitMemory),
 		EmitterFunc(EmitLoadAvg),
 		&CPUStat{},
+		&NetStat{},
 	}
 	if len(p.conf.Processes) > 0 {
 		p.emitters = append(p.emitters, NewProcessStat(p.conf.Processes))
