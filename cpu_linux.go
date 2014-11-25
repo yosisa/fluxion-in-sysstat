@@ -19,14 +19,15 @@ func (s *CPUStat) Emit(emit emitFunc) error {
 	}
 
 	for i, old := range s.old {
-		user := old.User - stats[i].User
-		nice := old.Nice - stats[i].Nice
-		system := old.System - stats[i].System
-		idle := old.Idle - stats[i].Idle
-		iowait := old.Iowait - stats[i].Iowait
-		irq := old.Irq - stats[i].Irq
-		softirq := old.Softirq - stats[i].Softirq
-		stolen := old.Stolen - stats[i].Stolen
+		cur := stats[i]
+		user := cur.User - old.User
+		nice := cur.Nice - old.Nice
+		system := cur.System - old.System
+		idle := cur.Idle - old.Idle
+		iowait := cur.Iowait - old.Iowait
+		irq := cur.Irq - old.Irq
+		softirq := cur.Softirq - old.Softirq
+		stolen := cur.Stolen - old.Stolen
 
 		total := user + nice + system + idle + iowait + irq + softirq + stolen
 		emit("cpu", map[string]interface{}{
